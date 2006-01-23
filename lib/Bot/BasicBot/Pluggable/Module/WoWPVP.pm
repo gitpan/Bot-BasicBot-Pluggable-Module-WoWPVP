@@ -9,7 +9,7 @@ use Games::WoW::PVP;
 
 =head1 NAME
 
-Bot::BasicBot::Pluggable::Module::WoWPVP - The great new Bot::BasicBot::Pluggable::Module::WoWPVP!
+Bot::BasicBot::Pluggable::Module::WoWPVP - Fetch information about pvp grades for World Of Warcraft
 
 =head1 VERSION
 
@@ -17,7 +17,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -29,6 +29,10 @@ Perhaps a little code snippet.
 
     my $foo = Bot::BasicBot::Pluggable::Module::WoWPVP->new();
     ...
+    
+    will display the information like this:
+    Adygma <Cercle De L Anneau Rond> # Night Elf Priestlevel 60 # Position 44 (Grade 10 Lieutenant Commander)
+    HK/DK 14564/37 rating 40470 (Progression  89%)
 
 =cut
 
@@ -61,20 +65,20 @@ sub said {
 
     $body =~ /^!pvp (\w+)/;
     my $character = $1;
-    
-    my ($realm) = $body =~ /-r (\w.+) (-\w|$)/ ;
+
+    my ($realm)   = $body =~ /-r (\w.+) (-\w|$)/;
     my ($country) = $body =~ /-c (EU|US)/;
     my ($faction) = $body =~ /-f (h|a)/i;
-     
-    $realm ||= 'conseil des ombres';
+
+    $realm   ||= 'conseil des ombres';
     $country ||= 'EU';
     $faction ||= 'h';
-    
+
     $character = ucfirst $character;
     $realm =~ s/\s/+/g;
-    
-    my $WoW  = Games::WoW::PVP->new();
-    
+
+    my $WoW = Games::WoW::PVP->new();
+
     my %hash = $WoW->search_player(
         {   country   => $country,
             realm     => $realm,
@@ -84,33 +88,34 @@ sub said {
     );
 
     if ( !defined $hash{characterName} ) {
-        $self->tell(
-            $channel, $who . ": no informations for $character"
-        );
+        $self->tell( $channel, $who . ": no informations for $character" );
         return;
     }
-    
-    my $text = $hash{characterName};
+
+    my $text = chr(3) . "9" . $hash{characterName};
     $text .= " <" . $hash{guildName} . ">" if defined $hash{guildName};
-    $text .= " # "
+    $text .= chr(3) . "0 # "
         . $hash{raceLabel} . " "
-        . $hash{classLabel}
-        . " level "
-        . $hash{level};
+        . $hash{classLabel} . "level"
+        . chr(3) . "9 "
+        . $hash{level}
+        . chr(3) . "0";
     $text .= " # Position "
         . $hash{position}
         . " (Grade "
         . $hash{rank} . " "
-        . $hash{rankLabel} . " )";
-    $text .= " # HK/DK " . $hash{lhk} . "/" . $hash{ldk};
+        . $hash{rankLabel} . ")";
+    $self->tell( $channel, $text );
+
+    $text = "HK/DK " . $hash{lhk} . "/" . $hash{ldk};
     $text .= " rating "
         . $hash{rating}
-        . " (Progression "
-        . $hash{percent} . "%) ";
+        . " (Progression"
+        . chr(3) . "9 "
+        . $hash{percent} . "%"
+        . chr(3) . "0) ";
 
-    $self->tell(
-        $channel, $who . ": " . $text
-    );
+    $self->tell( $channel, $text );
 
 }
 
